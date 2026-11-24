@@ -1,6 +1,13 @@
 # India Oil & Gas Price Model (IOGPM v1)
 
 Dynamic, scenario-driven Monte Carlo model of India's crude, gas and pump prices, Dec-2026 to Dec-2040.
+
+## Abstract
+
+We present IOGPM v1, a dynamic Monte Carlo scenario model of India's crude oil, natural gas, LPG, CNG and Delhi pump prices from December 2026 to 2040, conditioned on the current West Asia disruption. A four-state Markov regime layer (normalisation, simmering disruption, acute escalation, structural glut) drives a regime-switching, mean-reverting Brent process. Brent feeds the USD/INR rate (oil beta about 0.14, calibrated to RBI, PPAC and EIA data) and the Indian crude basket, which is Brent plus a basis term less a Russian-discount overlay. Gas prices come from Henry Hub, JKM with a geopolitical premium, a landed-LNG portfolio, and the administered APM formula with its price cap. Delhi petrol, diesel, domestic LPG and CNG prices come from cost-reflective build-ups plus reaction functions for oil-marketing-company and government behaviour. The model is anchored to PPAC, RBI, EIA, IEA, OPEC and published retail prices, and supports live updating from new observations. It runs 3,000 paths in each of six scenarios, and an interactive dashboard re-blends the scenarios under user-chosen weights.
+
+Under the default weights, median Brent is $89/bbl in 2027, $80 in 2030 and $93 in 2040, with a 10-90% range of $60-112 in 2030. The rupee weakens from 94 to about 131 per US$ by 2040. Delhi petrol rises from Rs102 to about Rs139 per litre, the LPG cylinder from Rs942 to about Rs1,500, and CNG from Rs87 to about Rs111 per kg. Landed LNG falls from about $14 to $10-11/MMBtu as new supply arrives. The results reflect scenario weights, freight and VAT inputs, the LNG contract mix and the LPG and CNG cost assumptions, all of which are assumptions and need replacing with official series. The model has no out-of-sample backtest because only about eight months of crisis data exist. Its Q4-2027 Brent median ($86) sits above the EIA's $77. It is a scenario tool, not a point forecast.
+
 State as of ~20-23 Nov 2026. Run: `python3 india_oil_gas_price_model.py` then `python3 plot_results.py`.
 
 ## Structure
