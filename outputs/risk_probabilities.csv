@@ -1,0 +1,16 @@
+event,probability
+Brent >= $120 in at least one month of 2027,0.18340000000000004
+Brent >= $150 in at least one month before 2031,0.11386666666666669
+Brent <= $60 in at least one month of 2027-2030,0.4536733333333334
+Delhi petrol >= Rs110/l by Dec-2027,0.08527333333333334
+Delhi petrol >= Rs120/l by Dec-2030,0.17831333333333338
+Delhi diesel >= Rs105/l by Dec-2027,0.1275666666666667
+Delhi petrol below today's Rs102.12 at Dec-2027,0.18542000000000003
+USD/INR >= 100 at Dec-2027,0.18112000000000006
+USD/INR >= 120 at Dec-2035,0.40351333333333345
+India landed LNG >= $15/MMBtu in 2027 average,0.3865800000000001
+"Domestic LPG cylinder >= Rs1,000 at Dec-2027",0.4187466666666667
+"Domestic LPG cylinder >= Rs1,200 at Dec-2030",0.06645333333333335
+Delhi CNG >= Rs90/kg at Dec-2027,0.15752000000000005
+Delhi CNG >= Rs100/kg at Dec-2030,0.06888000000000001
+APM gas at the policy cap in Dec-2027,0.7765133333333336

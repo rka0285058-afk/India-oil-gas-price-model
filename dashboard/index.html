@@ -1,0 +1,536 @@
+<title>India Energy Price Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: sticky scenario-mix rail on the left, charts on the right; stacks to one column on phones. */
+:root{
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10); --wash:rgba(11,11,11,.05);
+  --band1:rgba(11,11,11,.09); --band2:rgba(11,11,11,.17);
+  --s0:#2a78d6; --s1:#eb6834; --s2:#1baf7a; --s3:#eda100; --s4:#e87ba4; --s5:#008300;
+  --r0:#c3c2b7; --r1:#fab219; --r2:#d03b3b; --r3:#86b6ef;
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.06);
+    --band1:rgba(240,239,236,.10); --band2:rgba(240,239,236,.20);
+    --s0:#3987e5; --s1:#d95926; --s2:#199e70; --s3:#c98500; --s4:#d55181; --s5:#0ca30c;
+    --r0:#4a4a46; --r3:#3987e5; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.06);
+  --band1:rgba(240,239,236,.10); --band2:rgba(240,239,236,.20);
+  --s0:#3987e5; --s1:#d95926; --s2:#199e70; --s3:#c98500; --s4:#d55181; --s5:#0ca30c;
+  --r0:#4a4a46; --r3:#3987e5; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.app{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;line-height:1.2;margin:0;font-weight:650;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:14px;margin:0;font-weight:650}
+.sub{color:var(--ink2);margin:4px 0 0;max-width:80ch}
+.pill{display:inline-block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);border:1px solid var(--border);border-radius:99px;padding:2px 9px;margin-top:8px}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+.rail{position:sticky;top:12px;display:flex;flex-direction:column;gap:16px}
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:0}
+.card-h{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.muted{color:var(--muted)} .ink2{color:var(--ink2)} .small{font-size:12px}
+.label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.seg button,.chip{border:1px solid var(--border);background:transparent;border-radius:99px;padding:4px 11px;font-size:12.5px;color:var(--ink2)}
+.seg button:hover,.chip:hover{background:var(--wash)}
+.seg button[aria-pressed="true"],.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.ctl{display:flex;flex-direction:column;gap:14px}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.mix{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.mrow{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:2px 8px;align-items:center}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.mname{font-weight:600;font-size:13px;min-width:0}
+.mpct{font-variant-numeric:tabular-nums;font-weight:650;min-width:3.2em;text-align:right}
+.mdesc{grid-column:2 / 4;font-size:12px;color:var(--muted);margin-top:-1px}
+.mrow input[type=range]{grid-column:2 / 3;width:100%;margin:2px 0 0;accent-color:var(--ink)}
+.only{grid-column:3;border:1px solid var(--border);background:transparent;border-radius:6px;font-size:11px;padding:1px 7px;color:var(--ink2)}
+.only:hover{background:var(--wash)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.kpi{text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi:hover{background:var(--wash)}
+.kpi[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.kpi .k{font-size:11.5px;color:var(--ink2)}
+.kpi .v{white-space:nowrap;font-size:22px;font-weight:650;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.kpi .u{font-size:11.5px;color:var(--muted);font-weight:400;letter-spacing:0}
+.kpi .r{font-size:11.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.kpi .d{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 8px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lk{display:inline-block;width:14px;height:0;border-top:3px solid currentColor}
+.lb{display:inline-block;width:14px;height:10px;border-radius:2px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;top:6px;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 18px rgba(0,0,0,.14);min-width:150px;z-index:3}
+.tip b{font-weight:650}
+.tip .row{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.tip .row span:first-child{display:inline-flex;align-items:center;gap:6px}
+.tip .hd{font-weight:650;margin-bottom:4px}
+.slider{display:flex;align-items:center;gap:12px;margin-top:10px}
+.slider input{flex:1;accent-color:var(--ink);min-width:0}
+.slider .fl{font-weight:650;min-width:5.5em;font-variant-numeric:tabular-nums}
+svg text{font-family:var(--font);fill:var(--muted);font-size:11px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.thr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-bottom:10px}
+.thr input{width:6.5em;border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:3px 8px;font-variant-numeric:tabular-nums}
+.big{font-size:15px;color:var(--ink2);margin:0 0 8px}
+.big b{font-size:22px;color:var(--ink);font-weight:650;letter-spacing:-.01em}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--grid);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr.tot td{font-weight:650;border-bottom:none}
+tr.sel td{background:var(--wash)}
+.risk{display:flex;flex-direction:column;gap:10px}.rrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 3.4em;gap:4px 12px;align-items:center}
+.rtrack{height:12px;background:var(--wash);border-radius:3px;display:flex;overflow:hidden}
+.rseg{height:100%;box-shadow:1px 0 0 var(--surface)}
+.rval{text-align:right;font-weight:650;font-variant-numeric:tabular-nums}
+.rname{font-size:13px;min-width:0}
+.foot{font-size:12px;color:var(--muted);max-width:110ch}
+.foot p{margin:0 0 6px}
+#loading{padding:40px 0;color:var(--ink2)}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}.rail{position:static}.two{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.rrow{grid-template-columns:minmax(0,1fr) 3.4em}.rrow .rtrack{grid-column:1 / 3;order:3}.card{padding:12px}}
+@media (prefers-reduced-motion: no-preference){.rseg{transition:width .15s}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>India Energy Price Simulator</h1>
+    <p class="sub">3,000 simulated price paths in each of six geopolitical scenarios, December 2026 to 2040. Change the scenario mix and the outlook for crude, gas, LPG, CNG and Delhi pump prices updates at once.</p>
+    <span class="pill">Scenario simulation, not a point forecast &middot; model state 20&ndash;23 Nov 2026</span>
+  </header>
+
+  <div id="loading">Loading simulation results&hellip;</div>
+
+  <div class="layout" id="ui" hidden>
+    <aside class="rail">
+      <section class="card" aria-labelledby="mixh">
+        <h2 id="mixh">Scenario mix</h2>
+        <p class="small muted" style="margin:2px 0 10px">Weights are relative and always add up to 100%.</p>
+        <div class="presets" id="presets"></div>
+        <div class="mix" id="mix"></div>
+      </section>
+      <section class="card ctl">
+        <div><p class="label">Chart view</p>
+          <div class="seg" id="segView">
+            <button data-v="blend" aria-pressed="true">Blended</button>
+            <button data-v="scen" aria-pressed="false">By scenario</button>
+            <button data-v="paths" aria-pressed="false">Simulated paths</button>
+          </div></div>
+        <div><p class="label">Prices</p>
+          <div class="seg" id="segReal">
+            <button data-v="nom" aria-pressed="true">Nominal</button>
+            <button data-v="real" aria-pressed="false">2026 prices</button>
+          </div></div>
+        <div><p class="label">Show through</p>
+          <div class="seg" id="segEnd">
+            <button data-v="2030" aria-pressed="false">2030</button>
+            <button data-v="2035" aria-pressed="false">2035</button>
+            <button data-v="2040" aria-pressed="true">2040</button>
+          </div></div>
+      </section>
+    </aside>
+
+    <div class="main">
+      <section aria-label="Key prices at the focus month">
+        <p class="label" id="kpiHead" style="margin-bottom:8px"></p>
+        <div class="kpis" id="kpis"></div>
+      </section>
+
+      <section class="card" aria-labelledby="mainh">
+        <div class="card-h">
+          <h2 id="mainh">Price path</h2>
+          <span class="small muted" id="mainUnit"></span>
+        </div>
+        <div class="seg" id="varChips" style="margin-bottom:12px"></div>
+        <div class="legend" id="legend"></div>
+        <div class="chart" id="mainChart"></div>
+        <div class="slider">
+          <label for="focus" class="small muted">Focus month</label>
+          <input type="range" id="focus" min="0" max="168" value="48" step="1">
+          <span class="fl" id="focusLbl"></span>
+        </div>
+        <p class="small muted" style="margin:6px 0 0">Hover for values. Click or drag on a chart, or use the slider, to move the focus month.</p>
+      </section>
+
+      <div class="two">
+        <section class="card" aria-labelledby="regh">
+          <div class="card-h"><h2 id="regh">Which geopolitical regime are we in?</h2></div>
+          <div class="legend" id="regLegend"></div>
+          <div class="chart" id="regChart"></div>
+        </section>
+        <section class="card" aria-labelledby="disth">
+          <div class="card-h"><h2 id="disth">Spread of outcomes</h2><span class="small muted" id="distFocus"></span></div>
+          <div class="thr"><label for="thr" class="small ink2">Chance that <span id="thrVar"></span> is above</label>
+            <input type="number" id="thr" step="any"><span class="small muted" id="thrUnit"></span></div>
+          <p class="big" id="thrAns"></p>
+          <div class="chart" id="distChart"></div>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="sch">
+        <div class="card-h"><h2 id="sch">Scenario comparison</h2><span class="small muted" id="schNote"></span></div>
+        <div class="tbl"><table id="scTable"></table></div>
+      </section>
+
+      <div class="two">
+        <section class="card" aria-labelledby="riskh">
+          <div class="card-h"><h2 id="riskh">Chance of specific outcomes</h2></div>
+          <p class="small muted" style="margin:-4px 0 10px">Bar length is the blended probability. Colours show which scenarios contribute.</p>
+          <div class="risk" id="risks"></div>
+        </section>
+        <section class="card" aria-labelledby="annh">
+          <div class="card-h"><h2 id="annh">Annual averages</h2><span class="small muted" id="annUnit"></span></div>
+          <div class="tbl"><table id="annTable"></table></div>
+        </section>
+      </div>
+
+      <div class="foot">
+        <p>How it works: a regime-switching Brent model (calm, simmering disruption, acute escalation, glut) feeds the rupee, the Indian crude basket, LNG and domestic gas formulas, a pump-price rule that mimics excise cuts, oil-marketing-company losses and price hikes, an administered LPG price that follows the Saudi contract price with a lag, and a CNG price that follows the domestic-plus-LNG gas basket. Each scenario changes the odds of moving between regimes and the Russian-crude discount.</p>
+        <p>Calibrated to PPAC, RBI, EIA, IEA and OPEC figures; freight, VAT, refining margins, LNG contract mix, the LPG cost residual, the CNG gas-basket mix and scenario weights are assumptions. LPG and CNG are Delhi prices (14.2 kg domestic cylinder, IGL CNG). Not investment advice.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+var NAMES=["Base","Diplomatic settlement","Prolonged standoff","Escalation","Structural glut","Russia sanctions bite"];
+var DESC=["Markets price a gradual return to normal","Hormuz reopens and talks hold","Disruption lingers for years","Renewed war, acute supply loss","Demand peaks and supply floods in","Discounted Russian barrels shrink"];
+var DEFAULT_W=[30,20,20,8,12,10];
+var PRESETS=[["Model default",DEFAULT_W],["Settlement",[25,40,8,2,20,5]],["Hawkish",[15,5,25,35,5,15]],["Equal",[1,1,1,1,1,1]]];
+var REGN=["Calm","Simmering disruption","Acute escalation","Glut"];
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var D=null, VM={}, cache={}, ctxMain=null, ctxReg=null;
+var state={w:DEFAULT_W.slice(),v:"brent",view:"blend",real:false,end:2040,f:48,thr:100};
+var KPIV=["brent","fx","petrol","diesel","lpg","cng","apm","lng"];
+
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function fmt(v,d){return (isFinite(v)?v:0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d})}
+function fmtP(p){return p<0.005?"<1%":p>0.995?">99%":Math.round(p*100)+"%"}
+function dlabel(t){var a=D.dates[t].split("-");return MON[+a[1]-1]+" "+a[0]}
+function wn(){var s=0,i;for(i=0;i<state.w.length;i++)s+=state.w[i];if(!s)return state.w.map(function(){return 1/state.w.length});return state.w.map(function(x){return x/s})}
+function defl(vid,t){return Math.pow(1+VM[vid].cpi,(t+1)/12)}
+function deflY(vid,y){return Math.pow(1+VM[vid].cpi,y-2026)}
+function sc(vid,t){return state.real?1/defl(vid,t):1}
+function endIdx(){return D.dates.indexOf(state.end+"-12")}
+function pidx(p){for(var i=0;i<D.P.length;i++)if(Math.abs(D.P[i]-p)<1e-9)return i;return 0}
+
+/* ---------- mixture maths on stored quantile grids ---------- */
+function cdf(q,x){
+  var P=D.P,n=P.length,lo=q[0]-(q[1]-q[0])*0.25,hi=q[n-1]+(q[n-1]-q[n-2])*0.25;
+  if(x<=lo)return 0; if(x>=hi)return 1;
+  if(x<q[0])return P[0]*(x-lo)/(q[0]-lo);
+  if(x>=q[n-1])return P[n-1]+(1-P[n-1])*(x-q[n-1])/(hi-q[n-1]);
+  var a=0,b=n-1,m;
+  while(b-a>1){m=(a+b)>>1;if(q[m]<=x)a=m;else b=m}
+  var d=q[b]-q[a];return d<=0?P[b]:P[a]+(P[b]-P[a])*(x-q[a])/d;
+}
+function cdfMix(arrs,x,w){var s=0,i;for(i=0;i<arrs.length;i++)if(w[i]>0)s+=w[i]*cdf(arrs[i],x);return s}
+function mixQ(arrs,p,w){
+  var n=D.P.length,lo=Infinity,hi=-Infinity,i,q,it,mid;
+  for(i=0;i<arrs.length;i++)if(w[i]>0){q=arrs[i];lo=Math.min(lo,q[0]-(q[1]-q[0])*0.25);hi=Math.max(hi,q[n-1]+(q[n-1]-q[n-2])*0.25)}
+  for(it=0;it<34;it++){mid=(lo+hi)/2;if(cdfMix(arrs,mid,w)<p)lo=mid;else hi=mid}
+  return (lo+hi)/2;
+}
+function monthArrs(vid,t){return D.q[vid].map(function(s){return s.q[t]})}
+function annArrs(vid,yi){return D.q[vid].map(function(s){return s.ann[yi]})}
+function bands(vid){
+  var key=vid+"|"+state.w.join(",");
+  if(cache[key])return cache[key];
+  var w=wn(),T=D.dates.length,ps=[0.1,0.25,0.5,0.75,0.9],out=ps.map(function(){return new Float64Array(T)}),t,k;
+  for(t=0;t<T;t++){var a=monthArrs(vid,t);for(k=0;k<ps.length;k++)out[k][t]=mixQ(a,ps[k],w)}
+  if(Object.keys(cache).length>30)cache={};
+  cache[key]=out;return out;
+}
+
+/* ---------- scales and ticks ---------- */
+function niceTicks(lo,hi,n){
+  var span=hi-lo||1,raw=span/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),r=raw/mag;
+  var step=(r<1.5?1:r<3?2:r<7?5:10)*mag,t=[],v=Math.ceil(lo/step-1e-9)*step;
+  for(;v<=hi+1e-9;v+=step)t.push(+v.toFixed(10));
+  return {ticks:t,step:step};
+}
+function tickFmt(step){var d=step>=1?0:step>=0.1?1:2;return function(v){return fmt(v,d)}}
+function xTicks(tEnd,W){
+  var out=[],yrs=tEnd/12,stepY=W<520?(yrs>8?4:2):(yrs>8?2:1),t,y;
+  for(t=0;t<=tEnd;t++){var a=D.dates[t].split("-");if(a[1]==="01"&&(+a[0]-2027)%stepY===0)out.push([t,a[0]])}
+  return out;
+}
+function pathLine(xs,ys){var s="",i;for(i=0;i<xs.length;i++)s+=(i?"L":"M")+xs[i].toFixed(1)+","+ys[i].toFixed(1);return s}
+
+/* ---------- main chart ---------- */
+function renderMain(){
+  var host=$("#mainChart"),W=Math.max(300,host.clientWidth),H=W<560?300:380;
+  var tEnd=endIdx(),vid=state.v,V=VM[vid],B=bands(vid),w=wn(),t,i,m={l:50,r:14,t:10,b:26};
+  var lo=Infinity,hi=-Infinity;
+  function cons(v){if(v<lo)lo=v;if(v>hi)hi=v}
+  var med=[];for(i=0;i<6;i++)med.push(D.q[vid][i].q.map(function(q){return q[pidx(0.5)]}));
+  for(t=0;t<=tEnd;t++){
+    var k=sc(vid,t);
+    if(state.view==="blend"||state.view==="paths"){cons(B[0][t]*k);cons(B[4][t]*k)}
+    if(state.view==="scen"){for(i=0;i<6;i++)if(w[i]>0)cons(med[i][t]*k)}
+    if(state.view==="paths"){for(i=0;i<6;i++)if(w[i]>0)D.q[vid][i].paths.forEach(function(p){cons(p[t]*k)})}
+  }
+  var span=hi-lo||1,orig=lo;lo-=span*0.06;hi+=span*0.06;if(orig>=0&&lo<0)lo=0;
+  var nt=niceTicks(lo,hi,5),tf=tickFmt(nt.step);
+  var iw=W-m.l-m.r,ih=H-m.t-m.b;
+  var X=function(t){return m.l+iw*t/tEnd},Y=function(v){return m.t+ih*(1-(v-lo)/(hi-lo))};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(V.label)+' simulated price path">';
+  nt.ticks.forEach(function(v){s+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" style="stroke:var(--grid)" stroke-width="1"/><text x="'+(m.l-8)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+tf(v)+'</text>'});
+  s+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+(H-m.b)+'" y2="'+(H-m.b)+'" style="stroke:var(--axis)"/>';
+  xTicks(tEnd,W).forEach(function(a){s+='<text x="'+X(a[0])+'" y="'+(H-8)+'" text-anchor="middle">'+a[1]+'</text>'});
+  var xs=[],ts=[];for(t=0;t<=tEnd;t++){xs.push(X(t));ts.push(t)}
+  function line(arr,k){return pathLine(xs,ts.map(function(t){return Y(arr[t]*sc(vid,t))}))}
+  function area(a,b){
+    var up=ts.map(function(t){return (xs[t]).toFixed(1)+","+Y(a[t]*sc(vid,t)).toFixed(1)}).join("L");
+    var dn=ts.slice().reverse().map(function(t){return (xs[t]).toFixed(1)+","+Y(b[t]*sc(vid,t)).toFixed(1)}).join("L");
+    return "M"+up+"L"+dn+"Z";
+  }
+  if(state.view==="blend"||state.view==="paths"){
+    s+='<path d="'+area(B[0],B[4])+'" style="fill:var(--band1)"/>';
+    s+='<path d="'+area(B[1],B[3])+'" style="fill:var(--band2)"/>';
+  }
+  if(state.view==="paths"){
+    var maxw=Math.max.apply(null,w);
+    for(i=0;i<6;i++)if(w[i]>0){
+      var op=(0.07+0.33*w[i]/maxw).toFixed(2);
+      D.q[vid][i].paths.forEach(function(p){s+='<path d="'+pathLine(xs,ts.map(function(t){return Y(p[t]*sc(vid,t))}))+'" fill="none" stroke-width="1" style="stroke:var(--s'+i+');opacity:'+op+'"/>'});
+    }
+    s+='<path d="'+line(B[0])+'" fill="none" stroke-width="1.25" stroke-dasharray="4 3" style="stroke:var(--ink2)"/>';
+    s+='<path d="'+line(B[4])+'" fill="none" stroke-width="1.25" stroke-dasharray="4 3" style="stroke:var(--ink2)"/>';
+  }
+  if(state.view==="scen"){
+    for(i=0;i<6;i++)if(w[i]>0)s+='<path d="'+line(med[i])+'" fill="none" stroke-width="2" stroke-linejoin="round" style="stroke:var(--s'+i+');opacity:'+(0.45+0.55*Math.min(1,w[i]*4)).toFixed(2)+'"/>';
+  }
+  s+='<path d="'+line(B[2])+'" fill="none" stroke-width="2.4" stroke-linejoin="round" style="stroke:var(--ink)" '+(state.view==="scen"?'stroke-dasharray="6 4"':"")+'/>';
+  var f=Math.min(state.f,tEnd);
+  s+='<line x1="'+X(f)+'" x2="'+X(f)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--ink2)"/>';
+  s+='<circle cx="'+X(f)+'" cy="'+Y(B[2][f]*sc(vid,f))+'" r="4.5" style="fill:var(--ink);stroke:var(--surface)" stroke-width="2"/>';
+  s+='<line id="xh" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke-width="1" style="stroke:var(--muted)" visibility="hidden"/>';
+  s+='<rect id="ov" x="'+m.l+'" y="'+m.t+'" width="'+iw+'" height="'+ih+'" fill="transparent" style="touch-action:pan-y;cursor:crosshair"/></svg><div class="tip" id="tipMain" hidden></div>';
+  host.innerHTML=s;
+  ctxMain={W:W,m:m,iw:iw,tEnd:tEnd,X:X,B:B,med:med,w:w,vid:vid};
+  wireHover($("#ov",host),$("#xh",host),$("#tipMain",host),ctxMain,mainTip);
+}
+function mainTip(t,c){
+  var V=VM[c.vid],k=sc(c.vid,t),d=V.dec,h='<div class="hd">'+dlabel(t)+'</div>',i;
+  if(state.view==="scen"){
+    for(i=0;i<6;i++)if(c.w[i]>0)h+='<div class="row"><span><i class="sw" style="background:var(--s'+i+')"></i>'+NAMES[i]+'</span><b>'+fmt(c.med[i][t]*k,d)+'</b></div>';
+    h+='<div class="row" style="margin-top:4px;color:var(--ink)"><span>Blended median</span><b>'+fmt(c.B[2][t]*k,d)+'</b></div>';
+  }else{
+    h+='<div class="row"><span>Median</span><b style="color:var(--ink)">'+fmt(c.B[2][t]*k,d)+'</b></div>';
+    h+='<div class="row"><span>25&ndash;75%</span><span>'+fmt(c.B[1][t]*k,d)+' &ndash; '+fmt(c.B[3][t]*k,d)+'</span></div>';
+    h+='<div class="row"><span>10&ndash;90%</span><span>'+fmt(c.B[0][t]*k,d)+' &ndash; '+fmt(c.B[4][t]*k,d)+'</span></div>';
+  }
+  return h+'<div class="small muted" style="margin-top:4px">'+V.unit+(state.real?", 2026 prices":"")+'</div>';
+}
+function wireHover(ov,xh,tip,c,tipFn){
+  function idx(e){var r=ov.getBoundingClientRect(),x=(e.clientX-r.left)/r.width;return Math.max(0,Math.min(c.tEnd,Math.round(x*c.tEnd)))}
+  function show(e){
+    var t=idx(e),x=c.X(t);xh.setAttribute("x1",x);xh.setAttribute("x2",x);xh.setAttribute("visibility","visible");
+    tip.innerHTML=tipFn(t,c);tip.hidden=false;
+    var hw=tip.offsetWidth,left=x+12;if(left+hw>c.W-4)left=x-hw-12;tip.style.left=Math.max(4,left)+"px";
+    return t;
+  }
+  ov.addEventListener("pointermove",function(e){var t=show(e);if(e.buttons)setFocus(t,true)});
+  ov.addEventListener("pointerdown",function(e){var t=show(e);setFocus(t,true)});
+  ov.addEventListener("pointerleave",function(){tip.hidden=true;xh.setAttribute("visibility","hidden")});
+}
+
+/* ---------- regimes ---------- */
+function regSeries(){
+  var w=wn(),T=D.dates.length,out=[],t,r,i;
+  for(t=0;t<T;t++){var a=[0,0,0,0];for(i=0;i<6;i++)for(r=0;r<4;r++)a[r]+=w[i]*D.reg[i][t][r];out.push(a)}
+  return out;
+}
+function renderReg(){
+  var host=$("#regChart"),W=Math.max(260,host.clientWidth),H=210,m={l:38,r:10,t:8,b:24},tEnd=endIdx();
+  var R=regSeries(),iw=W-m.l-m.r,ih=H-m.t-m.b,X=function(t){return m.l+iw*t/tEnd},Y=function(p){return m.t+ih*(1-p)};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Probability of each geopolitical regime over time">',t,r;
+  [0,0.25,0.5,0.75,1].forEach(function(p){s+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(p)+'" y2="'+Y(p)+'" style="stroke:var(--grid)"/><text x="'+(m.l-6)+'" y="'+(Y(p)+4)+'" text-anchor="end">'+Math.round(p*100)+'%</text>'});
+  xTicks(tEnd,W).forEach(function(a){s+='<text x="'+X(a[0])+'" y="'+(H-7)+'" text-anchor="middle">'+a[1]+'</text>'});
+  var base=new Array(tEnd+1).fill(0);
+  for(r=0;r<4;r++){
+    var top=[],up="",dn="";
+    for(t=0;t<=tEnd;t++)top.push(base[t]+R[t][r]);
+    for(t=0;t<=tEnd;t++)up+=(t?"L":"M")+X(t).toFixed(1)+","+Y(top[t]).toFixed(1);
+    for(t=tEnd;t>=0;t--)dn+="L"+X(t).toFixed(1)+","+Y(base[t]).toFixed(1);
+    s+='<path d="'+up+dn+'Z" style="fill:var(--r'+r+');stroke:var(--surface)" stroke-width="1.5"/>';
+    base=top;
+  }
+  var f=Math.min(state.f,tEnd);
+  s+='<line x1="'+X(f)+'" x2="'+X(f)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--ink)"/>';
+  s+='<line id="xh2" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke-width="1" style="stroke:var(--ink2)" visibility="hidden"/>';
+  s+='<rect id="ov2" x="'+m.l+'" y="'+m.t+'" width="'+iw+'" height="'+ih+'" fill="transparent" style="touch-action:pan-y;cursor:crosshair"/></svg><div class="tip" id="tipReg" hidden></div>';
+  host.innerHTML=s;
+  ctxReg={W:W,m:m,iw:iw,tEnd:tEnd,X:X,R:R};
+  wireHover($("#ov2",host),$("#xh2",host),$("#tipReg",host),ctxReg,function(t,c){
+    var h='<div class="hd">'+dlabel(t)+'</div>',r;
+    for(r=3;r>=0;r--)h+='<div class="row"><span><i class="sw" style="background:var(--r'+r+')"></i>'+REGN[r]+'</span><b>'+Math.round(c.R[t][r]*100)+'%</b></div>';
+    return h;
+  });
+}
+
+/* ---------- distribution at focus month ---------- */
+function thrNominal(){return state.thr/sc(state.v,state.f)}
+function renderDist(){
+  var host=$("#distChart"),W=Math.max(260,host.clientWidth),H=210,m={l:38,r:10,t:8,b:26};
+  var vid=state.v,V=VM[vid],t=Math.min(state.f,endIdx()),w=wn(),arrs=monthArrs(vid,t),k=sc(vid,t);
+  var x0=mixQ(arrs,0.005,w),x1=mixQ(arrs,0.995,w),NB=32,bw=(x1-x0)/NB,i,b;
+  var mass=[],tot=new Array(NB).fill(0),ymax=0;
+  for(i=0;i<6;i++){var row=[];for(b=0;b<NB;b++){var v=w[i]>0?w[i]*(cdf(arrs[i],x0+(b+1)*bw)-cdf(arrs[i],x0+b*bw))*100:0;row.push(v);tot[b]+=v}mass.push(row)}
+  for(b=0;b<NB;b++)ymax=Math.max(ymax,tot[b]);
+  var yt=niceTicks(0,ymax*1.08,4),top=yt.ticks[yt.ticks.length-1];if(top<ymax)top=ymax*1.08;
+  var dlo=x0*k,dhi=x1*k,xt=niceTicks(dlo,dhi,5),xf=tickFmt(xt.step);
+  var iw=W-m.l-m.r,ih=H-m.t-m.b,X=function(v){return m.l+iw*(v-dlo)/(dhi-dlo)},Y=function(p){return m.t+ih*(1-p/top)};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Distribution of simulated '+esc(V.label)+' outcomes at '+dlabel(t)+'">';
+  yt.ticks.forEach(function(p){s+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(p)+'" y2="'+Y(p)+'" style="stroke:var(--grid)"/><text x="'+(m.l-6)+'" y="'+(Y(p)+4)+'" text-anchor="end">'+p+'%</text>'});
+  s+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+(H-m.b)+'" y2="'+(H-m.b)+'" style="stroke:var(--axis)"/>';
+  xt.ticks.forEach(function(v){s+='<text x="'+X(v)+'" y="'+(H-8)+'" text-anchor="middle">'+xf(v)+'</text>'});
+  for(b=0;b<NB;b++){
+    var acc=0,xa=X((x0+b*bw)*k),xb=X((x0+(b+1)*bw)*k);
+    for(i=0;i<6;i++){var h=mass[i][b];if(h<=0)continue;
+      s+='<rect x="'+xa.toFixed(1)+'" y="'+Y(acc+h).toFixed(1)+'" width="'+Math.max(1,xb-xa-1).toFixed(1)+'" height="'+Math.max(0,Y(acc)-Y(acc+h)).toFixed(1)+'" style="fill:var(--s'+i+');stroke:var(--surface)" stroke-width="1"/>';
+      acc+=h}
+  }
+  var md=mixQ(arrs,0.5,w)*k,tx=state.thr;
+  s+='<line x1="'+X(md)+'" x2="'+X(md)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke-width="2" style="stroke:var(--ink)"/>';
+  s+='<text x="'+X(md)+'" y="'+(m.t+9)+'" text-anchor="'+(X(md)>W/2?"end":"start")+'" dx="'+(X(md)>W/2?-5:5)+'" style="fill:var(--ink);font-weight:600">median '+fmt(md,V.dec)+'</text>';
+  if(tx>=dlo&&tx<=dhi)s+='<line x1="'+X(tx)+'" x2="'+X(tx)+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke-width="1.5" stroke-dasharray="5 3" style="stroke:var(--ink2)"/>';
+  s+='</svg>';
+  host.innerHTML=s;
+}
+
+/* ---------- tables, KPIs, risks ---------- */
+function renderKpis(){
+  var t=Math.min(state.f,endIdx()),w=wn(),h="";
+  $("#kpiHead").textContent="Blended outlook in "+dlabel(t)+" (median, with 10–90% range)";
+  KPIV.forEach(function(vid){
+    var V=VM[vid],k=sc(vid,t),a=monthArrs(vid,t),m50=mixQ(a,0.5,w)*k,m10=mixQ(a,0.1,w)*k,m90=mixQ(a,0.9,w)*k;
+    var b50=mixQ(monthArrs(vid,0),0.5,w)*sc(vid,0),dp=(m50/b50-1)*100;
+    h+='<button class="kpi" data-v="'+vid+'" aria-pressed="'+(vid===state.v)+'"><span class="k">'+V.label+'</span><span class="v">'+fmt(m50,V.dec)+' <span class="u">'+V.unit+'</span></span><span class="r">'+fmt(m10,V.dec)+' &ndash; '+fmt(m90,V.dec)+'</span><span class="d">'+(dp>=0?"▲ ":"▼ ")+fmt(Math.abs(dp),0)+'% vs Dec 2026</span></button>';
+  });
+  $("#kpis").innerHTML=h;
+}
+function renderScTable(){
+  var vid=state.v,V=VM[vid],t=Math.min(state.f,endIdx()),w=wn(),k=sc(vid,t),arrs=monthArrs(vid,t),xn=thrNominal(),i;
+  $("#schNote").textContent=V.label+" in "+dlabel(t)+", "+V.unit;
+  var h='<thead><tr><th>Scenario</th><th>Weight</th><th>Median</th><th>10&ndash;90% range</th><th>Above '+fmt(state.thr,V.dec)+'</th></tr></thead><tbody>';
+  for(i=0;i<6;i++){
+    var q=arrs[i];
+    h+='<tr><td><i class="sw" style="background:var(--s'+i+');margin-right:8px"></i>'+NAMES[i]+'</td><td>'+Math.round(w[i]*100)+'%</td><td>'+fmt(q[pidx(0.5)]*k,V.dec)+'</td><td>'+fmt(q[pidx(0.1)]*k,V.dec)+' &ndash; '+fmt(q[pidx(0.9)]*k,V.dec)+'</td><td>'+fmtP(1-cdf(q,xn))+'</td></tr>';
+  }
+  h+='<tr class="tot"><td>Blended</td><td>100%</td><td>'+fmt(mixQ(arrs,0.5,w)*k,V.dec)+'</td><td>'+fmt(mixQ(arrs,0.1,w)*k,V.dec)+' &ndash; '+fmt(mixQ(arrs,0.9,w)*k,V.dec)+'</td><td>'+fmtP(1-cdfMix(arrs,xn,w))+'</td></tr></tbody>';
+  $("#scTable").innerHTML=h;
+}
+function renderRisks(){
+  var w=wn(),h="",e,i,names=D.risk[0].names;
+  for(e=0;e<names.length;e++){
+    var tot=0,segs="";
+    for(i=0;i<6;i++){var c=w[i]*D.risk[i].p[e];tot+=c;if(c>0)segs+='<span class="rseg" style="width:'+(c*100).toFixed(2)+'%;background:var(--s'+i+')" title="'+NAMES[i]+': '+Math.round(c*100)+'% of the total"></span>'}
+    h+='<div class="rrow"><div class="rname">'+esc(names[e])+'</div><div class="rtrack" role="img" aria-label="'+fmtP(tot)+'">'+segs+'</div><div class="rval">'+fmtP(tot)+'</div></div>';
+  }
+  $("#risks").innerHTML=h;
+}
+function renderAnn(){
+  var vid=state.v,V=VM[vid],w=wn(),h='<thead><tr><th>Year</th><th>10%</th><th>Median</th><th>90%</th></tr></thead><tbody>';
+  $("#annUnit").textContent=V.label+", "+V.unit+(state.real?", 2026 prices":"");
+  D.years.forEach(function(y,yi){
+    var a=annArrs(vid,yi),k=state.real?1/deflY(vid,y):1,fy=D.dates[Math.min(state.f,endIdx())].slice(0,4)==String(y);
+    h+='<tr'+(fy?' class="sel"':"")+'><td>'+y+'</td><td>'+fmt(mixQ(a,0.1,w)*k,V.dec)+'</td><td><b>'+fmt(mixQ(a,0.5,w)*k,V.dec)+'</b></td><td>'+fmt(mixQ(a,0.9,w)*k,V.dec)+'</td></tr>';
+  });
+  $("#annTable").innerHTML=h+"</tbody>";
+}
+function renderLegend(){
+  var h="",i,w=wn();
+  if(state.view==="blend")h='<span><i class="lk" style="color:var(--ink)"></i>Blended median</span><span><i class="lb" style="background:var(--band2)"></i>25&ndash;75%</span><span><i class="lb" style="background:var(--band1)"></i>10&ndash;90%</span>';
+  else{
+    for(i=0;i<6;i++)if(w[i]>0)h+='<span><i class="lb" style="background:var(--s'+i+')"></i>'+NAMES[i]+'</span>';
+    h+=state.view==="scen"?'<span><i class="lk" style="color:var(--ink);border-top-style:dashed"></i>Blended median</span>':'<span><i class="lk" style="color:var(--ink)"></i>Blended median</span><span class="muted">dashed: blended 10% and 90%</span>';
+  }
+  $("#legend").innerHTML=h;
+}
+function renderThrText(){
+  var vid=state.v,V=VM[vid],t=Math.min(state.f,endIdx()),w=wn(),p=1-cdfMix(monthArrs(vid,t),thrNominal(),w);
+  $("#thrVar").textContent=V.label;$("#thrUnit").textContent=V.unit+(state.real?" (2026 prices)":"");
+  $("#thr").value=state.thr;
+  $("#thrAns").innerHTML='<b>'+fmtP(p)+'</b> of simulated outcomes are above '+fmt(state.thr,V.dec)+' in '+dlabel(t);
+  $("#distFocus").textContent=dlabel(t);
+}
+
+/* ---------- orchestration ---------- */
+var pend=false;
+function schedule(){if(pend)return;pend=true;requestAnimationFrame(function(){pend=false;renderAll()})}
+function renderAll(){
+  var tEnd=endIdx();if(state.f>tEnd)state.f=tEnd;
+  $("#focus").max=tEnd;$("#focus").value=state.f;$("#focusLbl").textContent=dlabel(state.f);
+  var V=VM[state.v];$("#mainh").textContent=V.label+" path";$("#mainUnit").textContent=V.unit+(state.real?", 2026 prices":", nominal");
+  $("#varChips").querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.v===state.v)});
+  renderLegend();renderKpis();renderMain();renderReg();renderThrText();renderDist();renderScTable();renderRisks();renderAnn();
+}
+function setFocus(t,fromChart){state.f=t;schedule()}
+function setSeg(id,val){$("#"+id).querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.v===String(val))})}
+
+function build(){
+  var mix="",i;
+  for(i=0;i<6;i++)mix+='<div class="mrow"><i class="sw" style="background:var(--s'+i+')"></i><span class="mname">'+NAMES[i]+'</span><span class="mpct" id="mp'+i+'"></span><span class="mdesc">'+DESC[i]+'</span><input type="range" min="0" max="100" step="1" id="mw'+i+'" aria-label="'+NAMES[i]+' weight"><button class="only" data-i="'+i+'" aria-label="Show only '+NAMES[i]+'">only</button></div>';
+  $("#mix").innerHTML=mix;
+  $("#presets").innerHTML=PRESETS.map(function(p,j){return '<button class="chip" data-p="'+j+'" aria-pressed="false">'+p[0]+'</button>'}).join("");
+  $("#varChips").innerHTML=D.vars.map(function(v){return '<button data-v="'+v.id+'" aria-pressed="false">'+v.label+'</button>'}).join("");
+  $("#regLegend").innerHTML=[0,1,2,3].map(function(r){return '<span><i class="lb" style="background:var(--r'+r+')"></i>'+REGN[r]+'</span>'}).join("");
+  syncSliders();
+  for(i=0;i<6;i++)(function(i){$("#mw"+i).addEventListener("input",function(e){state.w[i]=+e.target.value;updPct();clearPreset();schedule()})})(i);
+  $("#mix").addEventListener("click",function(e){var b=e.target.closest(".only");if(!b)return;var j=+b.dataset.i;state.w=state.w.map(function(_,k){return k===j?100:0});syncSliders();clearPreset();schedule()});
+  $("#presets").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var p=PRESETS[+b.dataset.p];state.w=p[1].slice();syncSliders();clearPreset(+b.dataset.p);schedule()});
+  $("#segView").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;state.view=b.dataset.v;setSeg("segView",state.view);schedule()});
+  $("#segReal").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;state.real=b.dataset.v==="real";setSeg("segReal",b.dataset.v);schedule()});
+  $("#segEnd").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;state.end=+b.dataset.v;setSeg("segEnd",state.end);schedule()});
+  $("#varChips").addEventListener("click",function(e){var b=e.target.closest("button");if(b)setVar(b.dataset.v)});
+  $("#kpis").addEventListener("click",function(e){var b=e.target.closest(".kpi");if(b)setVar(b.dataset.v)});
+  $("#focus").addEventListener("input",function(e){setFocus(+e.target.value)});
+  $("#thr").addEventListener("input",function(e){var v=parseFloat(e.target.value);if(isFinite(v)){state.thr=v;renderThrText2()}});
+  var rt;window.addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(schedule,80)});
+  clearPreset(0);
+}
+function renderThrText2(){renderThrText();renderDist();renderScTable()}
+function setVar(v){state.v=v;state.thr=VM[v].thr;schedule()}
+function syncSliders(){for(var i=0;i<6;i++)$("#mw"+i).value=state.w[i];updPct()}
+function updPct(){var w=wn();for(var i=0;i<6;i++)$("#mp"+i).textContent=Math.round(w[i]*100)+"%"}
+function clearPreset(j){document.querySelectorAll("#presets button").forEach(function(b){b.setAttribute("aria-pressed",j!==undefined&&b.dataset.p===String(j))})}
+
+fetch("data.json").then(function(r){return r.json()}).then(function(arr){
+  D={q:{},reg:[],risk:[]};
+  arr.forEach(function(r){
+    if(r.t==="meta"){for(var k in r)D[k]=r;D.meta=r}
+    else if(r.t==="q"){(D.q[r.v]=D.q[r.v]||[])[r.s]=r}
+    else if(r.t==="reg")D.reg[r.s]=r.p;
+    else if(r.t==="risk")D.risk[r.s]=r;
+  });
+  var m=D.meta;D.dates=m.dates;D.P=m.P;D.years=m.years;D.vars=m.vars;
+  D.vars.forEach(function(v){VM[v.id]=v});
+  state.thr=VM[state.v].thr;
+  build();
+  $("#loading").hidden=true;$("#ui").hidden=false;
+  renderAll();
+}).catch(function(e){$("#loading").textContent="Could not load the simulation results ("+e.message+")."});
+})();
+</script>
